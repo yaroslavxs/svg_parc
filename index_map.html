@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Парковка во дворе</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: #f0f0f0;
+            font-family: Arial, sans-serif;
+        }
+
+        .header {
+            padding: 20px;
+            background: #2E7DFF;
+            color: white;
+            text-align: center;
+            font-size: 1.2rem;
+        }
+
+        .map-container {
+            position: relative;
+            width: 100%;
+            max-width: 800px;
+            margin: 20px auto;
+        }
+
+        svg {
+            width: 100%;
+            height: auto;
+            border: 1px solid #ccc;
+            cursor: default;
+        }
+
+        .parking-comment {
+            position: absolute;
+            background: white;
+            border: 1px solid #ddd;
+            padding: 5px;
+            border-radius: 4px;
+            font-size: 0.9rem;
+            max-width: 150px;
+        }
+
+        .comment-form {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            display: none;
+        }
+
+        .comment-form input {
+            width: 100%;
+            padding: 10px;
+            margin: 5px 0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+
+        .comment-form button {
+            background: #2196F3;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        Тут можно знать кого подпереть и до скольки. Если вы уже заняли место оставьте комментарий до скольки вас можно 'подпереть'
+    </div>
+
+    <div class="map-container">
+        <svg id="parking_map" viewBox="0 0 800 600">
+            <rect id="parking_1" x="50" y="50" width="150" height="80" fill="lightgreen" stroke="black" stroke-width="2"/>
+        </svg>
+    </div>
+
+    <div class="comment-form" id="commentForm">
+        <input type="text" id="timeInput" placeholder="До какого времени (например: 18:00)">
+        <button onclick="saveComment()">Оставить комментарий</button>
+    </div>
+
+    <script>
+        let currentParkingId = null;
+        const comments = JSON.parse(localStorage.getItem('parkingComments')) || {};
+
+        // Рендер комментариев при загрузке
+        function renderComments() {
+            const svg = document.getElementById('parking_map');
+            svg.innerHTML = ''; // Очищаем SVG
+
+            // Восстанавливаем элементы парковки
+            const originalSVG = `
+                <rect id="parking_1" x="50" y="50" width="150" height="80" fill="lightgreen" stroke="black" stroke-width="2"/>
+            `;
+            svg.innerHTML += originalSVG;
+
+            // Добавляем комментарии
+            Object.entries(comments).forEach(([id, comment]) => {
+                const rect = document.getElementById(id);
+                if (rect) {
+                    const bbox = rect.getBBox();
+                    const commentText = document.createElementNS("http://www.w3.org/2000/svg", "text");
+                    commentText.setAttribute('x', bbox.x + 10);
+                    commentText.setAttribute('y', bbox.y + bbox.height + 20);
+                    commentText.textContent = `⏰ ${comment}`;
+                    svg.appendChild(commentText);
+                }
+            });
+        }
+
+        // Обработчик клика по парковке
+        document.getElementById('parkingMap').addEventListener('click', (e) => {
+            const target = e.target;
+            if (target.id.startsWith('parking_')) {
+                currentParkingId = target.id;
+                document.getElementById('commentForm').style.display = 'block';
+            }
+        });
+
+        // Сохранение комментария
+        function saveComment() {
+            const time = document.getElementById('timeInput').value;
+            if (time && currentParkingId) {
+                comments[currentParkingId] = time;
+                localStorage.setItem('parkingComments', JSON.stringify(comments));
+                renderComments();
+                document.getElementById('commentForm').style.display = 'none';
+                document.getElementById('timeInput').value = '';
+            }
+        }
+
+        // Инициализация
+        renderComments();
+    </script>
+</body>
+</html>
